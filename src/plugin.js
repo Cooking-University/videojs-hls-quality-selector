@@ -25,12 +25,38 @@ class HlsQualitySelectorPlugin {
     this.player = player;
     this.config = options;
 
-    // If there is quality levels plugin and the HLS tech exists
-    // then continue.
-    if (this.player.qualityLevels && this.getHls()) {
-      // Create the quality button.
-      this.createQualityButton();
-      this.bindPlayerEvents();
+    // Ensure dependencies are met
+    if (!this.player.qualityLevels) {
+      console.warn(`Error: Missing videojs-contrib-quality-levels plugin (required by videojs-hls-quality-selector)\nhttps://github.com/videojs/videojs-contrib-quality-levels`);
+      return;
+    }
+
+    // Begin plugin setup
+    this.setupPlugin();
+  }
+
+  /**
+   * Setups the plugin, creates DOM elements, adds event listeners
+   */
+  setupPlugin() {
+    // Create the quality selector button.
+    this.createQualityButton();
+    this.bindPlayerEvents();
+    // Listen for video source changes
+    this.player.on('loadedmetadata', () => this.updatePlugin());
+  }
+
+  /**
+   * Updates the UI when video.js source changes
+   */
+   updatePlugin() {
+    // If there is the HLS tech
+    if (this.getHls()) {
+      // Show the quality selector button
+      this._qualityButton.show();
+    } else {
+      // Hide the quality selector
+      this._qualityButton.hide();
     }
   }
 
