@@ -4,7 +4,10 @@ import ConcreteButton from './ConcreteButton';
 import ConcreteMenuItem from './ConcreteMenuItem';
 
 // Default options for the plugin.
-const defaults = {};
+const defaults = {
+  sortAscending: false,
+  autoPlacement: 'top'
+};
 
 // Cross-compatibility for Video.js 5 and 6.
 const registerPlugin = videojs.registerPlugin || videojs.plugin;
@@ -134,6 +137,12 @@ class HlsQualitySelectorPlugin {
     const qualityList = player.qualityLevels();
     const levels = qualityList.levels_ || [];
     const levelItems = [];
+    const autoPlacement = this.config.autoPlacement;
+    const autoMenuItem = this.getQualityMenuItem.call(this, {
+      label: player.localize('Auto'),
+      value: 'auto',
+      selected: true
+    });
 
     for (let i = 0; i < levels.length; ++i) {
       const {width, height} = levels[i];
@@ -158,28 +167,29 @@ class HlsQualitySelectorPlugin {
       }
     }
 
-    levelItems.sort((current, next) => {
-      if ((typeof current !== 'object') || (typeof next !== 'object')) {
-        return -1;
-      }
-      if (current.item.value < next.item.value) {
-        return -1;
-      }
-      if (current.item.value > next.item.value) {
-        return 1;
-      }
-      return 0;
-    });
+    // sort the quality level values
+    if (this.config.sortAscending) {
+      levelItems.sort((current, next) => {
+        if ((typeof current !== 'object') || (typeof next !== 'object')) {
+          return -1;
+        }
+        return current.item.value - next.item.value;
+      });
+    } else {
+      levelItems.sort((current, next) => {
+        if ((typeof current !== 'object') || (typeof next !== 'object')) {
+          return -1;
+        }
+        return next.item.value - current.item.value;
+      });
+    }
 
-    levelItems.push(this.getQualityMenuItem.call(this, {
-      label: player.localize('Auto'),
-      value: 'auto',
-      selected: true
-    }));
 
     if (this._qualityButton) {
       this._qualityButton.createItems = function() {
-        return levelItems;
+        // put 'auto' at the top or bottom per option parameter
+        return autoPlacement === 'top' ? [autoMenuItem, ...levelItems] :
+          [...levelItems, autoMenuItem];
       };
       this._qualityButton.update();
     }
